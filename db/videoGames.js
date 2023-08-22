@@ -31,13 +31,13 @@ async function getVideoGameById(id) {
 // POST - /api/video-games - create a new video game
 async function createVideoGame(body) {
     try {
-        const { /* Extract required fields from the 'body' object */ } = body;
+        const { name,description,price } = body;
 
         const { rows: [newVideoGame] } = await client.query(`
-            INSERT INTO videoGames(/* columns */) 
-            VALUES(/* values */)
+            INSERT INTO videoGames(name,description,price) 
+            VALUES($1,$2,$3)
             RETURNING *;
-        `, [/* values */]);
+        `, [name,description,price]);
 
         return newVideoGame;
     } catch (error) {
@@ -48,20 +48,38 @@ async function createVideoGame(body) {
 // PUT - /api/video-games/:id - update a single video game by id
 async function updateVideoGame(id, fields = {}) {
     try {
-        const { /* Extract fields from the 'fields' object */ } = fields;
+        const { name, description, price } = fields;
+
+        // Constructing the query only if the fields are present.
+        const setParts = [];
+        const values = [id];
+
+        if (name !== undefined) {
+            setParts.push(`name = $${values.length + 1}`);
+            values.push(name);
+        }
+        if (description !== undefined) {
+            setParts.push(`description = $${values.length + 1}`);
+            values.push(description);
+        }
+        if (price !== undefined) {
+            setParts.push(`price = $${values.length + 1}`);
+            values.push(price);
+        }
 
         const { rows: [updatedVideoGame] } = await client.query(`
             UPDATE videoGames
-            SET /* update fields */
+            SET ${setParts.join(', ')}
             WHERE id = $1
             RETURNING *;
-        `, [id, /* update values */]);
+        `, values);
 
         return updatedVideoGame;
     } catch (error) {
         throw error;
     }
 }
+
 
 // DELETE - /api/video-games/:id - delete a single video game by id
 async function deleteVideoGame(id) {
